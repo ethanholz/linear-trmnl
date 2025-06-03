@@ -4,11 +4,8 @@ A lightweight Deno-based API service that fetches and caches your assigned Linea
 
 ## Features
 
-- 🚀 Fast API responses with intelligent caching
+- 🚀 Fast API responses with simple caching
 - 📊 Fetches your assigned Linear issues organized by state (Todo, Backlog)
-- ⏰ Configurable auto-refresh intervals
-- 🔄 Manual refresh endpoint
-- 🏥 Health check endpoint with cache status
 - 🐳 Docker support
 - 📦 Zero-config setup with sensible defaults
 
@@ -19,6 +16,10 @@ A lightweight Deno-based API service that fetches and caches your assigned Linea
 - [Deno](https://deno.land/) runtime (if not using Docker)
 - [Docker](https://www.docker.com/) (if not using Source)
 - [Linear API token](https://linear.app/docs/api-and-webhooks)
+- A generated API key see below:
+```bash
+openssl rand -base64 32
+```
 
 ### Installation
 
@@ -26,6 +27,7 @@ A lightweight Deno-based API service that fetches and caches your assigned Linea
 1. Create a `.env` file with your Linear API token:
 ```bash
 LINEAR_API_TOKEN=your_linear_api_token_here
+API_KEY=your_api_key
 # Add other options if needed
 ```
 
@@ -53,6 +55,7 @@ cd linear-trmnl
 2. Create a `.env` file with your Linear API token:
 ```bash
 LINEAR_API_TOKEN=your_linear_api_token_here
+API_KEY=your_api_key
 # Add other options if needed
 ```
 
@@ -61,6 +64,11 @@ LINEAR_API_TOKEN=your_linear_api_token_here
 deno task start
 ```
 
+### Deno Deploy
+You can also deploy this on [Deno Deploy](https://deno.com/deploy). Use the methods described [here](https://docs.deno.com/deploy/manual/how-to-deploy/) and add your
+`API_KEY` and `LINEAR_API_TOKEN` to the environment variables.
+
+
 ## Configuration
 
 Configure the service using environment variables:
@@ -68,14 +76,15 @@ Configure the service using environment variables:
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `LINEAR_API_TOKEN` | Your Linear API token (required) | - |
-| `CACHE_DURATION_MINUTES` | How long to cache responses | `30` |
-| `REFRESH_INTERVAL_MINUTES` | Background refresh interval | `15` |
-
+| `API_KEY` | Your API key (required) | - |
 ### Getting a Linear API Token
 
 1. Go to [Linear Settings > API](https://linear.app/settings/api)
 2. Create a new personal API key
 3. Copy the token to your `.env` file
+
+## Using with TRMNL
+Once your service is up, you will want to add it to TRMNL by setting this up as a Polling `GET`, set your `API_KEY` using the header `API-Key: your_key_here`. Then you can create markup as you wish!
 
 ## API Endpoints
 
@@ -91,6 +100,7 @@ Returns your assigned Linear issues organized by state.
       {
         "title": "Fix authentication bug",
         "description": "Users can't log in with OAuth",
+        // Project is an optional field
         "project": "Authentication System"
       }
     ],
@@ -101,38 +111,23 @@ Returns your assigned Linear issues organized by state.
       }
     ]
   },
-  "cached": true,
-  "lastRefresh": "2024-01-15T10:30:00.000Z",
-  "refreshIntervalMinutes": 15,
-  "cacheDurationMinutes": 30
 }
 ```
 
-### POST `/refresh`
+### POST `/cache`
 
-Manually refresh the issues cache.
-
-**Response:**
+**Body:**
+Refresh
 ```json
-{
-  "message": "Cache refreshed successfully",
-  "lastRefresh": "2024-01-15T10:35:00.000Z",
-  "issues": { ... }
-}
+{"action":"refresh"}
 ```
 
-### GET `/health`
-
-Check service health and cache status.
+Clear
+```json
+{"action":"clear"}
+```
 
 **Response:**
 ```json
-{
-  "status": "healthy",
-  "lastRefresh": "2024-01-15T10:30:00.000Z",
-  "cacheAgeMinutes": 5,
-  "isCacheValid": true,
-  "refreshIntervalMinutes": 15,
-  "cacheDurationMinutes": 30
-}
+{"message":"..."}
 ```
