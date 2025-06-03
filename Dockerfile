@@ -7,9 +7,12 @@ WORKDIR /app
 COPY deno.json .
 COPY deno.lock .
 COPY main.ts .
+COPY api api/
+COPY middleware middleware/
+COPY utils utils/
 
 # Compile the main app
 RUN deno cache main.ts
 
 # Run the app
-CMD ["deno", "run", "--allow-net", "--allow-read", "--allow-env", "main.ts"]
+CMD ["deno", "run", "--allow-net", "--allow-read", "--allow-env", "--unstable-kv", "main.ts"]
