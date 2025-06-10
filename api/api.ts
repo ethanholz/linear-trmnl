@@ -60,6 +60,14 @@ export class LinearTrmnl {
 
     for (const issue of myIssues.nodes) {
       const state = await issue.state;
+      const team = await issue.team;
+      const cycles = await team?.cycles({
+        filter: {
+          isActive: { eq: true },
+        },
+      });
+      const currentCycle = cycles?.nodes[0];
+
       if (state !== undefined) {
         const item: LinearItem = {
           title: issue.title,
@@ -67,6 +75,10 @@ export class LinearTrmnl {
         };
         if (issue.project !== undefined) {
           item.project = (await issue.project).name;
+        }
+
+        if (!currentCycle || !issue.cycle) {
+          continue;
         }
 
         if (state.name === "Todo") {
