@@ -37,6 +37,7 @@ export class LinearTrmnl {
     });
 
     this.app.get("/", async (c) => {
+      console.log("received request");
       const cached = await kv.get("cache");
       if (cached !== undefined) {
         const issues = cached;
@@ -52,21 +53,25 @@ export class LinearTrmnl {
   }
   async getMyIssues(): Promise<LinearReturn> {
     const me = await this.linearClient.viewer;
+    const teams = await me.teams();
     const myIssues = await me.assignedIssues();
 
     if (!myIssues.nodes.length) return new LinearReturn();
+    if (!teams.nodes.length) return new LinearReturn();
+
+    const currentCycle = await teams.nodes[0].cycles({
+      filter: {
+        isActive: { eq: true },
+      },
+    });
+    if (!currentCycle) return new LinearReturn();
+    const cycle = currentCycle.nodes[0];
 
     const result = new LinearReturn();
 
     for (const issue of myIssues.nodes) {
       const state = await issue.state;
-      const team = await issue.team;
-      const cycles = await team?.cycles({
-        filter: {
-          isActive: { eq: true },
-        },
-      });
-      const currentCycle = cycles?.nodes[0];
+      const issueCycle = await issue.cycle;
 
       if (state !== undefined) {
         const item: LinearItem = {
@@ -77,8 +82,10 @@ export class LinearTrmnl {
           item.project = (await issue.project).name;
         }
 
-        if (!currentCycle || !issue.cycle) {
-          continue;
+        if (!issueCycle !== undefined) {
+          if (issueCycle?.id !== cycle.id) {
+            continue;
+          }
         }
 
         if (state.name === "Todo") {
